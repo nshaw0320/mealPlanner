@@ -1884,6 +1884,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
       <button class="side-btn" onclick="showPanel('oracle')" data-panel="oracle">
         🔮<span class="side-tooltip">Oracle AI</span>
       </button>
+      <button class="side-btn" onclick="openModal('gistSync')" style="margin-top:auto;">
+        ☁️<span class="side-tooltip">Cloud Sync</span>
+      </button>
     </nav>
     <button class="side-btn" onclick="openModal('newCampaign')" style="margin: 0 10px; width: calc(100% - 20px);">
       ＋<span class="side-tooltip">New Campaign</span>
@@ -2327,8 +2330,48 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
         <button class="bottom-btn" onclick="showPanel('journal')" data-panel="journal"><span class="bb-icon">📜</span>Log</button>
         <button class="bottom-btn" onclick="showPanel('map')" data-panel="map"><span class="bb-icon">🗺</span>Map</button>
         <button class="bottom-btn" onclick="showPanel('oracle')" data-panel="oracle"><span class="bb-icon">🔮</span>Oracle</button>
+        <button class="bottom-btn" onclick="openModal('gistSync')"><span class="bb-icon">☁️</span>Sync</button>
       </div>
     </nav>
+
+<!-- ══════════════════════════════════
+     FIREBASE SYNC MODAL
+══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-gistSync">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('gistSync')">&#10005;</button>
+    <div class="modal-title">☁️ Cloud Sync</div>
+
+    <!-- Status -->
+    <div id="fb-status-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:8px;background:var(--surface2);">
+      <span id="fb-dot" style="width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0;"></span>
+      <span id="fb-status-text" style="font-size:13px;color:var(--text2);">Not connected</span>
+    </div>
+
+    <!-- Device ID -->
+    <div style="margin-bottom:14px;">
+      <label style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:6px;">YOUR DEVICE NAME</label>
+      <input class="input" id="fb-device-id" placeholder="e.g. Nathan-iPad" style="font-size:14px;">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">Used to identify which device last saved. Anything works.</div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-gold" onclick="fbPush()">⬆ Save to Cloud</button>
+      <button class="btn btn-outline" onclick="fbPull()">⬇ Load from Cloud</button>
+    </div>
+
+    <div id="fb-log" style="font-size:12px;font-family:var(--font-mono);min-height:18px;text-align:center;color:var(--text3);"></div>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7;">
+      <strong style="color:var(--text2);">How to sync:</strong><br>
+      1. Set a device name → <strong>Save to Cloud</strong> on this device<br>
+      2. Open CODEX on your other device → <strong>Load from Cloud</strong><br>
+      3. Data syncs instantly via Firebase ✦
+    </div>
+  </div>
+</div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -3252,6 +3295,122 @@ function load() {
   } catch(e){}
 }
 
+// ══════════════════════════════════
+// FIREBASE SYNC
+// ══════════════════════════════════
+(function() {
+  const FB_CONFIG = {
+    apiKey: "AIzaSyC2HP52-6_oGnlN5khNpbpnaLtiEwM283o",
+    authDomain: "dnd-campaign-tracker-d9d64.firebaseapp.com",
+    projectId: "dnd-campaign-tracker-d9d64",
+    storageBucket: "dnd-campaign-tracker-d9d64.firebasestorage.app",
+    messagingSenderId: "978196140100",
+    appId: "1:978196140100:web:c0a553732a94595716ec11"
+  };
+  const FB_DOC = `https://firestore.googleapis.com/v1/projects/${FB_CONFIG.projectId}/databases/(default)/documents/codex/save`;
+
+  function fbLog(msg, color) {
+    const el = document.getElementById('fb-log');
+    if (el) { el.textContent = msg; el.style.color = color || 'var(--text3)'; }
+  }
+
+  function fbSetStatus(connected, msg) {
+    const dot = document.getElementById('fb-dot');
+    const txt = document.getElementById('fb-status-text');
+    if (dot) dot.style.background = connected ? '#50e080' : 'var(--text3)';
+    if (txt) txt.textContent = msg;
+  }
+
+  // Convert JS object → Firestore REST fields format
+  function toFirestore(obj) {
+    return { fields: { data: { stringValue: JSON.stringify(obj) } } };
+  }
+
+  // Extract data from Firestore REST response
+  function fromFirestore(doc) {
+    return JSON.parse(doc.fields.data.stringValue);
+  }
+
+  window.fbPush = async function() {
+    const deviceId = (document.getElementById('fb-device-id').value.trim()) || 'Unknown Device';
+    localStorage.setItem('codex_fb_device', deviceId);
+    fbLog('Saving to cloud...', 'var(--gold)');
+    fbSetStatus(false, 'Saving...');
+
+    save();
+    const rawData = localStorage.getItem('codex_v3') || '{}';
+    const payload = JSON.parse(rawData);
+    payload._savedAt = new Date().toISOString();
+    payload._savedBy = deviceId;
+
+    try {
+      const res = await fetch(FB_DOC + '?updateMask.fieldPaths=data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toFirestore(payload))
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        fbLog(`✗ Error: ${err.error?.message || res.status}`, 'var(--red)');
+        fbSetStatus(false, 'Save failed');
+        return;
+      }
+      fbLog(`✓ Saved from ${deviceId}`, 'var(--green)');
+      fbSetStatus(true, `Last saved by ${deviceId}`);
+      toast('Saved to cloud ☁️', 'green');
+    } catch(e) {
+      fbLog(`✗ ${e.message}`, 'var(--red)');
+      fbSetStatus(false, 'Network error');
+    }
+  };
+
+  window.fbPull = async function() {
+    fbLog('Loading from cloud...', 'var(--gold)');
+    fbSetStatus(false, 'Loading...');
+    try {
+      const res = await fetch(FB_DOC, { headers: { 'Content-Type': 'application/json' } });
+      if (res.status === 404) {
+        fbLog('✗ No cloud save found yet. Push from another device first.', 'var(--red)');
+        fbSetStatus(false, 'No save found');
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json();
+        fbLog(`✗ Error: ${err.error?.message || res.status}`, 'var(--red)');
+        fbSetStatus(false, 'Load failed');
+        return;
+      }
+      const doc = await res.json();
+      const data = fromFirestore(doc);
+      const savedBy = data._savedBy || 'another device';
+      const savedAt = data._savedAt ? new Date(data._savedAt).toLocaleString() : '';
+      delete data._savedAt; delete data._savedBy;
+
+      // Write to localStorage and reload into memory
+      localStorage.setItem('codex_v3', JSON.stringify(data));
+      if (data._mapAnnotations) { _mapAnnotations = data._mapAnnotations; delete data._mapAnnotations; }
+      S = {...S, ...data};
+
+      closeModal('gistSync');
+      renderTopbar(); renderCharacter(); renderSpells(); renderInventory(); renderParty(); renderNotes();
+      fbSetStatus(true, `Loaded — saved by ${savedBy}${savedAt ? ' at ' + savedAt : ''}`);
+      toast('Loaded from cloud ☁️', 'green');
+    } catch(e) {
+      fbLog(`✗ ${e.message}`, 'var(--red)');
+      fbSetStatus(false, 'Network error');
+    }
+  };
+
+  // Pre-fill device name when modal opens
+  window._fbLoadUI = function() {
+    const saved = localStorage.getItem('codex_fb_device') || '';
+    const el = document.getElementById('fb-device-id');
+    if (el && saved) el.value = saved;
+    document.getElementById('fb-log').textContent = '';
+    fbSetStatus(false, 'Ready');
+  };
+})();
+
 function getC() { return S.campaigns.find(c=>c.id===S.activeId)||null; }
 function modOf(n){ return Math.floor((n-10)/2); }
 function modStr(n){ const m=modOf(n); return (m>=0?'+':'')+m; }
@@ -3291,6 +3450,7 @@ function openModal(id){
   document.getElementById('modal-'+id).classList.add('open');
   if(id==='addMonster'){ renderMonsterGrid(); }
   if(id==='combatantHp'){ setTimeout(()=>document.getElementById('chpModalAmt')?.focus(),100); }
+  if(id==='gistSync'){ _fbLoadUI(); }
 }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
 
