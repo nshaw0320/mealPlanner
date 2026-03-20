@@ -2491,12 +2491,14 @@
 <script>
 // ── Anthropic API — direct browser call with official browser header ──
 async function anthropicFetch(body) {
+  if (!window.ANTHROPIC_API_KEY) {
+    throw new Error('No API key set — click ⚙ in the top bar to add your Anthropic key');
+  }
   return fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': window.ANTHROPIC_API_KEY || '',
-      'anthropic-version': '2023-06-01',
+      'x-api-key': window.ANTHROPIC_API_KEY,
       'anthropic-dangerous-allow-browser': 'true'
     },
     body: JSON.stringify(body)
