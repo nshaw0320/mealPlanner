@@ -227,7 +227,7 @@
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent-text); }
   .field input::placeholder, .field textarea::placeholder { color: var(--muted2); }
 
-  /* ── Responsive breakpoints ── */
+  /* ── Responsive — 768px (tablet / large phone landscape) ── */
   @media (max-width: 768px) {
     .app-shell {
       grid-template-columns: 1fr;
@@ -238,69 +238,130 @@
     .topbar { padding: 0 1rem; height: 52px; }
     .topbar .logo span { display: none; }
     .topbar-actions .btn:first-child { display: none; }
-    .main { padding: 1rem; }
+    .main { padding: 0.875rem; }
     .mobile-nav { display: grid; }
-  }
 
-  @media (max-width: 480px) {
-    .topbar-actions .btn { font-size: 12px; padding: 5px 10px; }
-    .main { padding: 0.75rem; }
-  }
-
-  /* Dark panel radius — reduce on mobile */
-  @media (max-width: 768px) {
-    .cal-dark, .recipe-lib-dark, .members-dark, .grocery-dark {
-      border-radius: 12px;
-      padding: 1rem;
-    }
-    .week-grid {
-      grid-template-columns: repeat(7, minmax(0,1fr));
-      gap: 4px;
-    }
+    /* Week planner */
+    .cal-dark { border-radius: 14px; padding: 1rem 0.875rem 1.25rem; }
+    .cal-topbar { margin-bottom: 0.75rem; gap: 8px; flex-wrap: wrap; }
+    .cal-title { font-size: 18px; }
+    .week-nav-btn { padding: 5px 10px; font-size: 12px; }
+    .week-grid { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 3px; }
     .day-header-wrap { padding-bottom: 4px; }
+    .day-header { font-size: 10px; }
     .day-actions { display: none; }
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .rdm-nutrition { grid-template-columns: repeat(2, 1fr); }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-card { padding: 12px; }
+    .stat-val { font-size: 20px; }
+    .wn-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+    /* Recipe library */
+    .recipe-lib-dark { border-radius: 14px; padding: 1rem 0.875rem; }
+    .recipe-lib-header { flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; }
+    .recipe-lib-actions { flex-wrap: wrap; gap: 8px; }
+    .recipe-filter-row { gap: 5px; padding-bottom: 8px; }
+    .recipe-grid { grid-template-columns: 1fr; gap: 8px; }
+
+    /* Modals */
+    .rdm-nutrition { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .rdm-body { flex-direction: column; }
+    .rdm-left { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); max-height: none; }
+    .rdm-right { padding: 1rem 1.25rem; }
     .arm-nut-grid { grid-template-columns: repeat(2, 1fr); }
     .arm-row { grid-template-columns: 1fr 1fr; }
-    .wn-grid { grid-template-columns: repeat(2, 1fr); }
-    .recipe-grid { grid-template-columns: 1fr; }
     .member-row-grid { grid-template-columns: 1fr; }
+    .members-dark { border-radius: 14px; padding: 1rem 0.875rem; }
+    .grocery-dark { border-radius: 14px; padding: 1rem 0.875rem; }
   }
 
+  /* ── Responsive — 480px (iPhone) ── */
   @media (max-width: 480px) {
-    .cal-dark, .recipe-lib-dark, .members-dark, .grocery-dark {
-      padding: 0.75rem;
-    }
-    .meal-slot { padding: 6px 7px; }
-    .meal-name { font-size: 10px; }
-    .meal-cal { font-size: 9.5px; }
+    .main { padding: 0.625rem; }
+    .topbar-actions .btn { font-size: 11px; padding: 5px 8px; }
+
+    /* Week planner */
+    .cal-dark { padding: 0.875rem 0.625rem 1rem; border-radius: 12px; }
+    .cal-topbar { gap: 6px; }
+    .week-grid { gap: 2px; }
+    .meal-slot { padding: 5px 4px; min-height: 52px; border-radius: 6px; }
+    .meal-type-label { font-size: 8px; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .meal-name { font-size: 9.5px; line-height: 1.25; -webkit-line-clamp: 2; }
+    .meal-cal { font-size: 9px; }
+    .add-meal-btn { font-size: 16px; line-height: 1; }
+    .day-header { font-size: 9px; }
     .stats-row { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-    .stat-val { font-size: 20px; }
-    .recipe-filter-row { gap: 4px; }
-    .r-filter-pill { font-size: 10px; padding: 3px 9px; }
+    .stat-label { font-size: 10px; }
+    .stat-val { font-size: 18px; }
+    .stat-sub { font-size: 10px; }
+
+    /* Recipe library */
+    .recipe-lib-dark { padding: 0.875rem 0.625rem; border-radius: 12px; }
+    .recipe-filter-row { gap: 4px; padding-bottom: 6px; }
+    .r-filter-pill { font-size: 10px; padding: 3px 8px; }
+    .recipe-card { padding: 12px 12px 10px; }
+    .recipe-card-name { font-size: 13px; }
+
+    /* Add meal modal */
+    .amd-option-name { font-size: 13px; }
     .amd-option-meta { font-size: 10px; }
-    .rdm-body { flex-direction: column; }
-    .rdm-left { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .recipe-detail-modal { border-radius: 16px; max-height: 95vh; }
-    .modal-add-recipe-dark { border-radius: 16px; max-height: 95vh; }
-    .add-meal-dark { border-radius: 16px; max-height: 95vh; }
+    .amd-tabs { gap: 4px; }
+    .amd-tab { font-size: 11px; padding: 7px 8px; }
+
+    /* Members */
+    .members-dark { padding: 0.875rem 0.625rem; border-radius: 12px; }
+    .mc-stat-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* Grocery */
+    .grocery-dark { padding: 0.875rem 0.625rem; border-radius: 12px; }
+    .grocery-title { font-size: 18px; }
+    .grocery-topbar { flex-wrap: wrap; gap: 8px; }
+    .grocery-actions { flex-wrap: wrap; gap: 6px; }
+    .grocery-action-btn { font-size: 11px; padding: 6px 10px; }
+
+    /* Recipe detail */
+    .rdm-header { padding: 1rem 1rem 0.875rem; }
+    .rdm-title { font-size: 18px; }
+    .rdm-header-actions { flex-wrap: wrap; gap: 4px; }
+    .rdm-action-btn { font-size: 10px; padding: 5px 10px; }
+    .rdm-nutrition { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .rdm-nut-val { font-size: 18px; }
+    .rdm-scale-row { flex-wrap: wrap; gap: 6px; }
+    .rdm-left { padding: 1rem 0.875rem; }
+    .rdm-right { padding: 1rem 0.875rem; }
+
+    /* Add recipe wizard */
+    .modal-add-recipe-dark { border-radius: 20px 20px 0 0; }
+    .arm-header { padding: 1rem 1rem 0.75rem; }
+    .arm-title { font-size: 17px; }
+    .arm-panel { padding: 0 1rem 1rem; }
+    .arm-footer { padding: 0.875rem 1rem; }
   }
 
-  /* Make modals full-screen on mobile */
+  /* ── Modals as bottom sheets on mobile ── */
   @media (max-width: 600px) {
-    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal-overlay { padding: 0; align-items: flex-end; background: rgba(0,0,0,0.75); }
     .modal, .modal-dark, .modal-add-recipe-dark, .add-meal-dark,
     .recipe-detail-modal, .modal-note {
       width: 100% !important;
-      max-width: 100%;
-      border-radius: 20px 20px 0 0 !important;
-      max-height: 92vh;
-      padding-bottom: calc(1.5rem + var(--safe-bottom));
+      max-width: 100% !important;
+      border-radius: 22px 22px 0 0 !important;
+      max-height: 93vh;
+      padding-bottom: calc(1.25rem + var(--safe-bottom)) !important;
     }
-    .recipe-detail-modal {
-      border-radius: 20px 20px 0 0 !important;
+    /* Drag handle visual indicator on bottom sheets */
+    .add-meal-dark::before, .modal-add-recipe-dark::before,
+    .recipe-detail-modal::before, .modal-dark::before {
+      content: '';
+      display: block;
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+      margin: 10px auto 0;
     }
+    /* Ensure modals scroll properly on iPhone */
+    .recipe-detail-modal { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .add-meal-dark { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .modal-add-recipe-dark { overflow-y: auto; -webkit-overflow-scrolling: touch; }
   }
 
   /* ── WEEK PLANNER — dark panel ─────────────────────── */
@@ -2668,6 +2729,7 @@ function copyDay(fromDay) {
     if (src) state.calendar[`${dest}-${type}`] = src;
   });
   renderWeekGrid();
+  saveState().catch(e => console.warn('Save failed:', e.message));
   showToast(`${fromDay} copied to ${dest}`);
 }
 
@@ -2847,7 +2909,7 @@ function renderWeekGrid() {
 
       if (recipe) {
         const conflict = anyMemberConflict(recipe);
-        let content = `<div class="meal-type-label">${type}</div><div class="meal-name" onclick="event.stopPropagation();openRecipeDetail(${recipe.id})" style="cursor:pointer;" title="View full recipe">${recipe.name}${conflict?'<span class="allergen-flag"></span>':''}</div>`;
+        let content = `<div class="meal-type-label">${type}</div><div class="meal-name" onclick="event.stopPropagation();openRecipeDetail(${recipe.id},'${key}')" style="cursor:pointer;" title="View full recipe">${recipe.name}${conflict?'<span class="allergen-flag"></span>':''}</div>`;
         if (calView === 'macro') {
           const total = (recipe.protein||0) + (recipe.carbs||0);
           const fatEst = Math.round(((recipe.cal - (recipe.protein*4) - (recipe.carbs*4)) / 9));
@@ -2879,9 +2941,11 @@ function renderWeekGrid() {
           const snapshot = { key, recipeId };
           delete state.calendar[key];
           renderWeekGrid();
-          showToast(`${recipe.name} removed`, () => {
+          saveState().catch(e => console.warn('Save failed:', e.message));
+          showToast(`${recipe.name} removed from plan`, () => {
             state.calendar[snapshot.key] = snapshot.recipeId;
             renderWeekGrid();
+            saveState().catch(e => console.warn('Save failed:', e.message));
           });
         });
         slot.title = 'Drag to move · Right-click to remove';
@@ -2901,6 +2965,7 @@ function renderWeekGrid() {
           delete state.calendar[dragSrc.key];
           dragSrc = null;
           renderWeekGrid();
+          saveState().catch(e => console.warn('Save failed:', e.message));
         });
       }
       col.appendChild(slot);
@@ -3117,7 +3182,10 @@ async function fillWeekAI() {
   renderWeekGrid();
 }
 
-async function openRecipeDetail(id) {
+let rdmCalendarKey = null; // set when opened from week planner slot
+
+async function openRecipeDetail(id, calendarKey) {
+  rdmCalendarKey = calendarKey || null;
   const overlay = document.getElementById('modal-recipe-detail');
   const content = document.getElementById('rdm-content');
   const r = getRecipeById(id);
@@ -3247,7 +3315,10 @@ function renderRecipeDetailContent(r, fatEst, safeBadge, tagBadges, cuisineBadge
           <button class="rdm-action-btn${r.favorite?' edit-active':''}" id="rdm-fav-btn-${r.id}" onclick="toggleFavorite(${r.id},event)" title="${r.favorite?'Unfavorite':'Favorite'}" style="${r.favorite?'color:#EF9F27;border-color:rgba(239,159,39,0.3);':'color:#5A5A62;'}">${r.favorite?'★ Favorited':'☆ Favorite'}</button>
           <button class="rdm-action-btn${r.disliked?' edit-active':''}" id="rdm-dislike-btn-${r.id}" onclick="toggleDislike(${r.id},event)" title="${r.disliked?'Remove dislike':'Dislike'}" style="${r.disliked?'color:#E87F7F;border-color:rgba(226,75,74,0.3);':''}">${r.disliked?'✕ Disliked':'✕ Dislike'}</button>
           <button class="rdm-action-btn" id="rdm-edit-toggle" onclick="toggleRecipeEdit(${r.id})">Edit</button>
-          <button class="rdm-action-btn" onclick="deleteRecipe(${r.id})" style="color:#E87F7F;border-color:rgba(226,75,74,0.2);">Remove</button>
+          ${rdmCalendarKey
+            ? `<button class="rdm-action-btn" onclick="removeFromSlot('${rdmCalendarKey}','${r.name}')" style="color:#E87F7F;border-color:rgba(226,75,74,0.2);">Remove from plan</button>`
+            : `<button class="rdm-action-btn" onclick="deleteRecipe(${r.id})" style="color:#E87F7F;border-color:rgba(226,75,74,0.2);">Delete from library</button>`
+          }
           <button class="rdm-close" onclick="closeRecipeDetail()">✕</button>
         </div>
       </div>
@@ -4101,6 +4172,7 @@ function renderAmdLibrary() {
       state.calendar[`${amdDay}-${amdType}`] = r.id;
       closeModal('modal-add-meal');
       renderWeekGrid();
+      saveState().catch(e => console.warn('Save failed:', e.message));
       showToast(`${r.name} added to ${amdDay} ${amdType}`);
     };
     list.appendChild(row);
@@ -4865,6 +4937,20 @@ async function loadState() {
   if (source === 'localStorage' && db) {
     saveState().catch(e => console.warn('Sync to Firestore failed:', e.message));
   }
+}
+
+// Remove meal from a calendar slot only — does NOT delete from library
+function removeFromSlot(calendarKey, recipeName) {
+  const snapshot = state.calendar[calendarKey];
+  delete state.calendar[calendarKey];
+  closeRecipeDetail();
+  renderWeekGrid();
+  saveState().catch(e => console.warn('Save failed:', e.message));
+  showToast(`"${recipeName}" removed from plan`, () => {
+    state.calendar[calendarKey] = snapshot;
+    renderWeekGrid();
+    saveState().catch(e => console.warn('Save failed:', e.message));
+  });
 }
 
 async function deleteRecipe(id, e) {
