@@ -2609,7 +2609,7 @@ function saveNote() {
   dayNotes[day] = document.getElementById('note-text').value.trim();
   closeModal('modal-note');
   renderWeekGrid();
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
 }
 
 function copyDay(fromDay) {
@@ -3127,7 +3127,7 @@ async function openRecipeDetail(id) {
       state.recipes[idx].servings = recipe.servings || 4;
       state.recipes[idx].prepTime = recipe.prepTime || '';
       state.recipes[idx].cookTime = recipe.cookTime || '';
-      saveState();
+      saveState().catch(e => console.warn("Save failed:", e.message));
     }
     renderRecipeDetailContent(state.recipes[idx]||r, fatEst, safeBadge, tagBadges, cuisineBadge);
   } catch(e) {
@@ -3274,7 +3274,7 @@ function toggleRecipeEdit(id) {
     if (idx > -1) {
       state.recipes[idx].ingredients = rdmEditIngredients.filter(i => i.name.trim());
       state.recipes[idx].steps = rdmEditSteps.filter(Boolean);
-      saveState();
+      saveState().catch(e => console.warn("Save failed:", e.message));
     }
     setRdmScale(id, rdmScale);
     recipeEditMode = false;
@@ -3368,7 +3368,7 @@ function toggleFavorite(id, e) {
   if (!r) return;
   r.favorite = !r.favorite;
   if (r.favorite) r.disliked = false; // can't be both
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
   renderRecipes();
   // Also update detail modal btn if open
   const btn = document.getElementById(`rdm-fav-btn-${id}`);
@@ -3381,7 +3381,7 @@ function toggleDislike(id, e) {
   if (!r) return;
   r.disliked = !r.disliked;
   if (r.disliked) r.favorite = false; // can't be both
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
   renderRecipes();
   const btn = document.getElementById(`rdm-dislike-btn-${id}`);
   if (btn) { btn.classList.toggle('disliked', !!r.disliked); btn.title = r.disliked ? 'Remove dislike' : 'Dislike'; }
@@ -3592,7 +3592,7 @@ function buildGroceryFromWeek() {
     ...checkedItems
   ];
 
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
   renderGrocery();
 
   const count = Object.values(merged).length;
@@ -3614,7 +3614,7 @@ function addGroceryItem() {
     checked: false
   });
   input.value = '';
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
   renderGrocery();
 }
 
@@ -3694,18 +3694,18 @@ function renderGrocery() {
 
 function toggleGrocery(id) {
   const item = state.grocery.find(i => i.id === id);
-  if (item) { item.checked = !item.checked; renderGrocery(); saveState(); }
+  if (item) { item.checked = !item.checked; renderGrocery(); saveState().catch(e => console.warn("Save failed:", e.message)); }
 }
 
 function removeGroceryItem(id) {
   const item = state.grocery.find(i => i.id === id);
   state.grocery = state.grocery.filter(i => i.id !== id);
   renderGrocery();
-  saveState();
-  if (item) showToast(`"${item.name}" removed`, () => { state.grocery.push(item); renderGrocery(); saveState(); });
+  saveState().catch(e => console.warn("Save failed:", e.message));
+  if (item) showToast(`"${item.name}" removed`, () => { state.grocery.push(item); renderGrocery(); saveState().catch(e => console.warn("Save failed:", e.message)); });
 }
 
-function clearChecked() { state.grocery = state.grocery.filter(i => !i.checked); renderGrocery(); saveState(); }
+function clearChecked() { state.grocery = state.grocery.filter(i => !i.checked); renderGrocery(); saveState().catch(e => console.warn("Save failed:", e.message)); }
 
 const DARK_AVATARS = [
   {bg:'rgba(29,158,117,0.18)',color:'#5DCAA5'},
@@ -3905,7 +3905,7 @@ function saveMember() {
   renderFamilyChips();
   renderMembers();
   renderCalBudget();
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
 }
 
 function deleteMember(id) {
@@ -3913,7 +3913,7 @@ function deleteMember(id) {
   state.members = state.members.filter(m => m.id !== id);
   renderFamilyChips();
   renderMembers();
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
 }
 
 function openAddMemberModal() { openMemberModal(); }
@@ -4261,7 +4261,7 @@ function confirmAIMeal() {
     const names = entries.map(m => m.memberName || m.name).join(', ');
     showToast(`${entries.length} meals added for ${names} & saved to library`);
     amdMemberOptions = {};
-    saveState();
+    saveState().catch(e => console.warn("Save failed:", e.message));
   } else {
     if (!amdSelectedOption) return;
     const meal = amdSelectedOption;
@@ -4277,7 +4277,7 @@ function confirmAIMeal() {
     renderWeekGrid();
     showToast(`"${meal.name}" added to ${amdDay} ${amdType} & saved to library`);
     amdSelectedOption = null;
-    saveState();
+    saveState().catch(e => console.warn("Save failed:", e.message));
   }
 }
 
@@ -4294,7 +4294,7 @@ function saveNoteMeal() {
   closeModal('modal-add-meal');
   renderWeekGrid();
   showToast(`"${text}" added to ${amdDay} ${amdType}`);
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
 }
 
 function saveNewMeal() { /* legacy — kept for topbar button compatibility */ openAddMealModal(); }
@@ -4665,7 +4665,7 @@ function saveNewRecipe() {
   closeModal('modal-add-recipe');
   renderRecipes();
   showToast(`${name} added to library`);
-  saveState();
+  saveState().catch(e => console.warn("Save failed:", e.message));
 }
 
 
@@ -4804,7 +4804,7 @@ async function loadState() {
   if (saved.dayNotes) Object.assign(dayNotes, saved.dayNotes);
 }
 
-function deleteRecipe(id, e) {
+async function deleteRecipe(id, e) {
   if (e) e.stopPropagation();
   const r = getRecipeById(id);
   if (!r) return;
@@ -4814,13 +4814,13 @@ function deleteRecipe(id, e) {
   });
   state.recipes = state.recipes.filter(x => x.id !== id);
   Object.keys(snapshot.calendarEntries).forEach(k => delete state.calendar[k]);
-  saveState();
+  await saveState();
   renderRecipes();
   closeRecipeDetail();
-  showToast(`"${r.name}" removed`, () => {
+  showToast(`"${r.name}" removed`, async () => {
     state.recipes.push(snapshot.recipe);
     Object.assign(state.calendar, snapshot.calendarEntries);
-    saveState();
+    await saveState();
     renderRecipes();
   });
 }
