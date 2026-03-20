@@ -2521,22 +2521,8 @@ let weekOffset = 0;
 let selectedMember = null;
 
 let state = {
-  members: [
-    { id: 1, name: 'Nathan', group: 'parent', role: 'Dad', age: 34, sex: 'male', activity: 'moderate', goal: 'maintain', diet: '', serving: 1, notes: '', allergens: ['Tomatoes','Eggs','Avocado','Mustard','Peas','Cantaloupe','Shrimp'], cuisines: ['Middle Eastern','Asian','American'] },
-    { id: 2, name: 'Tanya', group: 'parent', role: 'Mom', age: 32, sex: 'female', activity: 'active', goal: 'maintain', diet: '', serving: 1, notes: 'Adventurous eater, loves bold flavors', allergens: [], cuisines: ['American','Mediterranean','Mexican'] }
-  ],
-  recipes: [
-    { id: 1, name: 'Shakshuka (no egg/tomato)', cuisine: 'Middle Eastern', cal: 380, protein: 22, carbs: 34, allergens: [], tags: ['make-ahead','vegetarian'] },
-    { id: 2, name: 'Grilled Chicken & Rice Bowl', cuisine: 'American', cal: 520, protein: 42, carbs: 48, allergens: [], tags: ['meal-prep','high-protein'] },
-    { id: 3, name: 'Beef Kofta with Hummus', cuisine: 'Middle Eastern', cal: 490, protein: 35, carbs: 28, allergens: [], tags: ['quick'] },
-    { id: 4, name: 'Thai Basil Pork', cuisine: 'Asian', cal: 440, protein: 30, carbs: 36, allergens: [], tags: ['quick','spicy'] },
-    { id: 5, name: 'Tuna & White Bean Salad', cuisine: 'Mediterranean', cal: 350, protein: 28, carbs: 24, allergens: [], tags: ['no-cook','light'] },
-    { id: 6, name: 'Shrimp Tacos', cuisine: 'Mexican', cal: 480, protein: 32, carbs: 44, allergens: ['shrimp'], tags: ['quick'] },
-    { id: 7, name: 'Oatmeal with Berries', cuisine: 'American', cal: 310, protein: 9, carbs: 52, allergens: [], tags: ['breakfast','quick'] },
-    { id: 8, name: 'Lemon Herb Salmon', cuisine: 'Mediterranean', cal: 410, protein: 38, carbs: 12, allergens: [], tags: ['healthy','quick'] },
-    { id: 9, name: 'Instant Pot Chicken Soup', cuisine: 'American', cal: 340, protein: 29, carbs: 26, allergens: [], tags: ['make-ahead','comfort'] },
-    { id: 10, name: 'Mujaddara (Lentil & Rice)', cuisine: 'Middle Eastern', cal: 395, protein: 16, carbs: 60, allergens: [], tags: ['vegetarian','meal-prep'] },
-  ],
+  members: [],
+  recipes: [],
   calendar: {},
   grocery: []
 };
@@ -4772,6 +4758,7 @@ async function saveState() {
 // ── Load ──
 async function loadState() {
   let saved = null;
+  let source = null;
 
   // Try Firestore first
   if (db) {
@@ -4779,9 +4766,13 @@ async function loadState() {
       const doc = await db.collection('hearth').doc(firestoreDocId).get();
       if (doc.exists) {
         saved = doc.data();
+        source = 'firestore';
         console.log('✓ Loaded from Firestore');
-        // Keep localStorage in sync
+        // Keep localStorage in sync with latest Firestore data
         localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      } else {
+        // Document doesn't exist yet — clear any stale localStorage so we start fresh
+        localStorage.removeItem(STORAGE_KEY);
       }
     } catch(e) {
       console.warn('Firestore load failed, falling back to localStorage:', e.message);
@@ -4792,16 +4783,29 @@ async function loadState() {
   if (!saved) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) { saved = JSON.parse(raw); console.log('✓ Loaded from localStorage'); }
+      if (raw) {
+        saved = JSON.parse(raw);
+        source = 'localStorage';
+        console.log('✓ Loaded from localStorage');
+      }
     } catch(e) { console.warn('localStorage load failed', e); }
   }
 
+  // Nothing saved yet — first launch, stay empty
   if (!saved) return;
-  if (saved.members?.length) state.members = saved.members;
-  if (saved.recipes?.length) state.recipes = saved.recipes;
-  if (saved.calendar && Object.keys(saved.calendar).length) state.calendar = saved.calendar;
-  if (saved.grocery?.length) state.grocery = saved.grocery;
-  if (saved.dayNotes) Object.assign(dayNotes, saved.dayNotes);
+
+  // Apply saved data — use Array.isArray checks so empty arrays are respected
+  // This prevents defaulting back to hardcoded data when user has deleted everything
+  if (Array.isArray(saved.members)) state.members = saved.members;
+  if (Array.isArray(saved.recipes)) state.recipes = saved.recipes;
+  if (saved.calendar && typeof saved.calendar === 'object') state.calendar = saved.calendar;
+  if (Array.isArray(saved.grocery)) state.grocery = saved.grocery;
+  if (saved.dayNotes && typeof saved.dayNotes === 'object') Object.assign(dayNotes, saved.dayNotes);
+
+  // If we loaded from localStorage, push to Firestore to keep in sync
+  if (source === 'localStorage' && db) {
+    saveState().catch(e => console.warn('Sync to Firestore failed:', e.message));
+  }
 }
 
 async function deleteRecipe(id, e) {
