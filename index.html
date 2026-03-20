@@ -2509,7 +2509,8 @@
         <span id="theme-toggle-icon">☀️</span>
         <span class="theme-toggle-label" id="theme-toggle-text">Light</span>
       </button>
-      <button class="btn" onclick="openApiKeyModal()" title="API Key Settings" id="apikey-topbar-btn" style="padding:6px 10px;">⚙ <span id="api-status-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3E3E46;vertical-align:middle;margin-left:2px;" title="AI status"></span></button>
+      <button class="btn" onclick="openAccessModal()" title="Manage who can access this app" style="padding:6px 10px;">👥</button>
+      <button class="btn" onclick="openApiKeyModal()" title="API Key Settings" id="apikey-topbar-btn" style="padding:6px 10px;">⚙ <span id="api-status-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted2);vertical-align:middle;margin-left:2px;" title="AI status"></span></button>
       <button class="btn primary" onclick="openAddMealModal()">+ Add Meal</button>
     </div>
   </div>
@@ -6012,11 +6013,37 @@ async function signInWithGoogle() {
   }
 }
 
+// ── Check if email is on the allowlist ──
+async function isEmailAllowed(email) {
+  if (!db) return true; // if no db, let through (bootstrap case)
+  try {
+    const doc = await db.collection('hearth_config').doc('access').get();
+    if (!doc.exists) {
+      // No allowlist set yet — first user in becomes the owner, auto-add them
+      await db.collection('hearth_config').doc('access').set({ allowed: [email] });
+      return true;
+    }
+    const allowed = doc.data().allowed || [];
+    return allowed.map(e => e.toLowerCase().trim()).includes(email.toLowerCase().trim());
+  } catch(e) {
+    console.warn('Could not check allowlist:', e.message);
+    return false;
+  }
+}
+
 // ── Auth state watcher — drives the whole boot sequence ──
 function startAuthListener() {
   if (!auth) { bootApp(null); return; }
   auth.onAuthStateChanged(async user => {
     if (user) {
+      // Check allowlist before granting access
+      const allowed = await isEmailAllowed(user.email);
+      if (!allowed) {
+        await auth.signOut();
+        document.getElementById('auth-error').textContent =
+          `${user.email} is not authorised to access this app.`;
+        return;
+      }
       currentUser = user;
       document.getElementById('auth-gate').style.display = 'none';
       document.getElementById('app-shell').style.display = '';
@@ -6037,6 +6064,71 @@ async function bootApp(user) {
   renderFamilyChips();
   renderWeekGrid();
   if (!hasKey) document.getElementById('modal-apikey').classList.add('open');
+}
+
+// ── Manage access (add/remove allowed emails) ──
+async function openAccessModal() {
+  const modal = document.getElementById('modal-access');
+  if (!modal) return;
+  const label = document.getElementById('access-current-user');
+  if (label) label.textContent = currentUser?.email || '';
+  document.getElementById('access-error').textContent = '';
+  modal.classList.add('open');
+  await refreshAccessList();
+}
+
+async function refreshAccessList() {
+  const listEl = document.getElementById('access-list');
+  if (!listEl || !db) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">Loading…</div>';
+  try {
+    const doc = await db.collection('hearth_config').doc('access').get();
+    const allowed = doc.exists ? (doc.data().allowed || []) : [];
+    if (!allowed.length) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">No users yet.</div>';
+      return;
+    }
+    listEl.innerHTML = allowed.map((email, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);gap:10px;">
+        <span style="font-size:13px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${email}</span>
+        ${email.toLowerCase() === currentUser?.email?.toLowerCase()
+          ? '<span style="font-size:11px;color:var(--accent-text);">you</span>'
+          : `<button onclick="removeAllowedEmail('${email}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0 4px;transition:color 0.15s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">×</button>`
+        }
+      </div>`).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:var(--danger);font-size:13px;">Error: ${e.message}</div>`;
+  }
+}
+
+async function addAllowedEmail() {
+  const input = document.getElementById('access-email-input');
+  const email = input.value.trim().toLowerCase();
+  const errEl = document.getElementById('access-error');
+  errEl.textContent = '';
+  if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email address.'; return; }
+  try {
+    const doc = await db.collection('hearth_config').doc('access').get();
+    const current = doc.exists ? (doc.data().allowed || []) : [];
+    if (current.map(e=>e.toLowerCase()).includes(email)) { errEl.textContent = 'Already on the list.'; return; }
+    await db.collection('hearth_config').doc('access').set({ allowed: [...current, email] });
+    input.value = '';
+    await refreshAccessList();
+    showToast(`${email} can now access the app`);
+  } catch(e) { errEl.textContent = e.message; }
+}
+
+async function removeAllowedEmail(email) {
+  if (!confirm(`Remove ${email} from access?`)) return;
+  try {
+    const doc = await db.collection('hearth_config').doc('access').get();
+    const current = doc.exists ? (doc.data().allowed || []) : [];
+    await db.collection('hearth_config').doc('access').set({
+      allowed: current.filter(e => e.toLowerCase() !== email.toLowerCase())
+    });
+    await refreshAccessList();
+    showToast(`${email} removed`);
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 // ── Save ──
@@ -6281,6 +6373,58 @@ startAuthListener();
 
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--muted2);line-height:1.6;">
       🔒 Your key is stored in your own Firebase database and never leaves it. It's only used to make AI calls directly from your browser.
+    </div>
+  </div>
+</div>
+
+<!-- Manage Access Modal -->
+<div class="modal-overlay" id="modal-access" style="z-index:9999;" onclick="if(event.target===this)closeModal('modal-access')">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2rem;width:440px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;gap:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <div style="font-family:'Lora',serif;font-size:20px;font-weight:500;color:var(--text);">Manage Access</div>
+      <button onclick="closeModal('modal-access')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;">×</button>
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">
+      Only Google accounts on this list can sign in. The first person to sign in is added automatically.
+    </div>
+
+    <!-- Add email -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;">
+      <input id="access-email-input" type="email" placeholder="someone@gmail.com"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+               color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px;outline:none;"
+        onkeydown="if(event.key==='Enter')addAllowedEmail()"
+        onfocus="this.style.borderColor='var(--accent-text)'"
+        onblur="this.style.borderColor='var(--border2)'">
+      <button onclick="addAllowedEmail()"
+        style="background:var(--accent-bg);border:1px solid var(--accent-text);border-radius:10px;
+               color:var(--accent-text);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+               padding:9px 16px;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
+        onmouseover="this.style.background='var(--accent)';this.style.color='white'"
+        onmouseout="this.style.background='var(--accent-bg)';this.style.color='var(--accent-text)'">
+        + Add
+      </button>
+    </div>
+    <div id="access-error" style="font-size:12px;color:var(--danger);min-height:16px;margin-bottom:8px;"></div>
+
+    <!-- Allowed users list -->
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted2);margin-bottom:6px;">Allowed users</div>
+    <div id="access-list" style="flex:1;overflow-y:auto;min-height:60px;max-height:280px;"></div>
+
+    <!-- Signed-in as -->
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        Signed in as <span id="access-current-user" style="color:var(--text2);"></span>
+      </div>
+      <button onclick="auth.signOut()" 
+        style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);
+               font-family:'Inter',sans-serif;font-size:12px;padding:5px 12px;cursor:pointer;
+               white-space:nowrap;transition:all 0.15s;"
+        onmouseover="this.style.color='var(--danger)';this.style.borderColor='var(--danger)'"
+        onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">
+        Sign out
+      </button>
     </div>
   </div>
 </div>
