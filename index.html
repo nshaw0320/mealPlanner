@@ -1957,7 +1957,7 @@
     <div class="logo">Hearth <span>family meal planner</span></div>
     <div class="topbar-actions">
       <button class="btn" onclick="showPage('ai')">✦ AI Suggestions</button>
-      <button class="btn" onclick="openApiKeyModal()" title="API Key Settings" style="padding:6px 10px;">⚙</button>
+      <button class="btn" onclick="openApiKeyModal()" title="API Key Settings" id="apikey-topbar-btn" style="padding:6px 10px;">⚙ <span id="api-status-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3E3E46;vertical-align:middle;margin-left:2px;" title="AI status"></span></button>
       <button class="btn primary" onclick="openAddMealModal()">+ Add Meal</button>
     </div>
   </div>
@@ -2499,10 +2499,67 @@ async function anthropicFetch(body) {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': window.ANTHROPIC_API_KEY,
-      'anthropic-dangerous-allow-browser': 'true'
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify(body)
   });
+}
+
+// ── API key health check ──
+async function checkApiKey() {
+  const statusEl = document.getElementById('apikey-status');
+  const btnEl = document.getElementById('apikey-test-btn');
+  if (!statusEl || !btnEl) return;
+
+  const key = document.getElementById('apikey-input').value.trim() || window.ANTHROPIC_API_KEY;
+  if (!key) {
+    statusEl.textContent = '⚠ No key entered';
+    statusEl.style.color = '#EF9F27';
+    return;
+  }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Testing…';
+  statusEl.textContent = '';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Hi' }]
+      })
+    });
+
+    if (res.ok) {
+      statusEl.textContent = '✓ API key is working';
+      statusEl.style.color = '#5DCAA5';
+    } else if (res.status === 401) {
+      statusEl.textContent = '✕ Invalid key — check it and try again';
+      statusEl.style.color = '#E87F7F';
+    } else if (res.status === 429) {
+      statusEl.textContent = '⚠ Rate limited — key is valid but you\'re being throttled';
+      statusEl.style.color = '#EF9F27';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      statusEl.textContent = `✕ Error ${res.status}: ${err?.error?.message || 'Unknown error'}`;
+      statusEl.style.color = '#E87F7F';
+    }
+  } catch(e) {
+    statusEl.textContent = '✕ Request failed — CORS or network issue';
+    statusEl.style.color = '#E87F7F';
+  }
+
+  btnEl.disabled = false;
+  btnEl.textContent = 'Test key';
 }
 
 const ALLERGENS = [
@@ -4839,8 +4896,8 @@ async function loadApiKey() {
       const doc = await db.collection('hearth_config').doc('settings').get();
       if (doc.exists && doc.data().anthropicKey) {
         window.ANTHROPIC_API_KEY = doc.data().anthropicKey;
-        // Cache locally for offline use
         localStorage.setItem('hearth_api_key', doc.data().anthropicKey);
+        setApiStatusDot(true);
         return true;
       }
     } catch(e) {
@@ -4851,8 +4908,10 @@ async function loadApiKey() {
   const cached = localStorage.getItem('hearth_api_key');
   if (cached) {
     window.ANTHROPIC_API_KEY = cached;
+    setApiStatusDot(true);
     return true;
   }
+  setApiStatusDot(false);
   return false; // no key found — need setup
 }
 
@@ -4871,6 +4930,7 @@ async function saveApiKey() {
 
   window.ANTHROPIC_API_KEY = key;
   localStorage.setItem('hearth_api_key', key);
+  setApiStatusDot(true);
 
   if (db) {
     try {
@@ -4885,7 +4945,12 @@ async function saveApiKey() {
   showToast('API key saved — AI features are ready');
 }
 
-// ── Allow updating key from topbar settings ────────────────
+function setApiStatusDot(ok) {
+  const dot = document.getElementById('api-status-dot');
+  if (!dot) return;
+  dot.style.background = ok ? '#5DCAA5' : '#E87F7F';
+  dot.title = ok ? 'AI connected' : 'AI not connected — click ⚙ to set key';
+}
 function openApiKeyModal() {
   const input = document.getElementById('apikey-input');
   input.value = window.ANTHROPIC_API_KEY || '';
@@ -4924,11 +4989,20 @@ function openApiKeyModal() {
 
     <div id="apikey-error" style="font-size:12px;color:#E87F7F;margin-bottom:10px;display:none;"></div>
 
-    <button onclick="saveApiKey()" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:12px;border-radius:10px;border:none;background:#1D9E75;color:white;cursor:pointer;transition:background 0.15s;"
-      onmouseover="this.style.background='#5DCAA5';this.style.color='#0A0B0D'"
-      onmouseout="this.style.background='#1D9E75';this.style.color='white'">
-      Save &amp; Continue →
-    </button>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="saveApiKey()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:12px;border-radius:10px;border:none;background:#1D9E75;color:white;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='#5DCAA5';this.style.color='#0A0B0D'"
+        onmouseout="this.style.background='#1D9E75';this.style.color='white'">
+        Save &amp; Continue →
+      </button>
+      <button id="apikey-test-btn" onclick="checkApiKey()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:12px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#C8C4BA;cursor:pointer;transition:all 0.15s;white-space:nowrap;"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+        Test key
+      </button>
+    </div>
+
+    <div id="apikey-status" style="font-size:12px;min-height:18px;margin-bottom:10px;font-weight:500;"></div>
 
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:#3E3E46;line-height:1.6;">
       🔒 Your key is stored in your own Firebase database and never leaves it. It's only used to make AI calls directly from your browser.
