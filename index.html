@@ -8,11 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Meal Planner</title>
 <!-- ════════════════════════════════════════════════════════
-     HEARTH CONFIG — paste your Firebase values here
+     APP CONFIG — only Firebase config lives here.
+     The Anthropic API key is stored in Firestore, never in code.
      ════════════════════════════════════════════════════════ -->
 <script>
-  // Your Firebase config (get from Firebase console → Project settings → Your apps)
-  // The Anthropic API key is stored in Firestore — set it once in the app settings.
   window.firebaseConfig = {
     apiKey: "AIzaSyANR6nwg80fBjyo-IU4llqbWqo1NXUV8QY",
     authDomain: "meal-planner-bed64.firebaseapp.com",
@@ -23,9 +22,10 @@
   };
 </script>
 
-<!-- Firebase SDKs (compat version — no build step needed) -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap');
@@ -2468,8 +2468,38 @@
   .amd-loading-dot:nth-child(3) { animation-delay: 0.4s; }</style>
 </head>
 <body>
+<!-- ── Auth gate — shown until signed in ── -->
+<div id="auth-gate" style="
+  position:fixed;inset:0;z-index:99999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  padding:1.5rem;
+">
+  <div style="
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:20px;padding:2.5rem 2rem;width:360px;max-width:100%;
+    text-align:center;
+  ">
+    <div style="font-family:'Lora',serif;font-size:26px;font-weight:500;color:var(--text);margin-bottom:6px;">Meal Planner</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:2rem;line-height:1.6;">Sign in to access your family meal planner</div>
+    <button id="google-signin-btn" onclick="signInWithGoogle()" style="
+      width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+      background:var(--surface2);border:1px solid var(--border2);border-radius:12px;
+      padding:13px 20px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;
+      color:var(--text);cursor:pointer;transition:all 0.15s;
+    "
+    onmouseover="this.style.background='var(--surface3)'"
+    onmouseout="this.style.background='var(--surface2)'">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="auth-error" style="font-size:12px;color:var(--danger);margin-top:12px;min-height:18px;"></div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:1.5rem;line-height:1.5;">Access is restricted to authorised family members only.</div>
+  </div>
+</div>
+
 <a href="#main-content" class="skip-link">Skip to content</a>
-<div class="app-shell">
+<div class="app-shell" id="app-shell" style="display:none;">
 
   <div class="topbar">
     <div class="logo">Meal Planner</div>
@@ -5946,18 +5976,90 @@ async function askAI(type) {
 
 // ── Persistence — Firebase Firestore with localStorage fallback ──────────
 const STORAGE_KEY = 'hearth_app_v1';
-let db = null; // Firestore instance, set after Firebase init
-let firestoreDocId = 'default'; // single-doc approach; swap for userId if you add auth
+let db = null;
+let auth = null;
+let currentUser = null;
+let firestoreDocId = 'default';
 
-// ── Firestore init (called once Firebase SDK is ready) ──
-function initFirestore() {
+// ── Firebase init ──
+function initFirebase() {
   try {
-    if (!window.firebaseConfig || !window.firebaseConfig.projectId) return;
+    if (!window.firebaseConfig?.projectId) return;
     firebase.initializeApp(window.firebaseConfig);
     db = firebase.firestore();
-    console.log('✓ Firestore connected');
+    auth = firebase.auth();
+    console.log('✓ Firebase connected');
   } catch(e) {
-    console.warn('Firestore init failed, using localStorage:', e.message);
+    console.warn('Firebase init failed:', e.message);
+  }
+}
+
+// ── Google Sign-In ──
+async function signInWithGoogle() {
+  if (!auth) { document.getElementById('auth-error').textContent = 'Firebase not initialised.'; return; }
+  const btn = document.getElementById('google-signin-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  document.getElementById('auth-error').textContent = '';
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+    // onAuthStateChanged will handle the rest
+  } catch(e) {
+    console.error(e);
+    document.getElementById('auth-error').textContent = e.message || 'Sign-in failed. Please try again.';
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Sign in with Google`;
+  }
+}
+
+// ── Auth state watcher — drives the whole boot sequence ──
+function startAuthListener() {
+  if (!auth) { bootApp(null); return; }
+  auth.onAuthStateChanged(async user => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('app-shell').style.display = '';
+      await bootApp(user);
+    } else {
+      currentUser = null;
+      document.getElementById('auth-gate').style.display = 'flex';
+      document.getElementById('app-shell').style.display = 'none';
+    }
+  });
+}
+
+// ── Boot the app once authenticated ──
+async function bootApp(user) {
+  const hasKey = await loadApiKey();
+  await loadState();
+  applyTheme();
+  renderFamilyChips();
+  renderWeekGrid();
+  if (!hasKey) document.getElementById('modal-apikey').classList.add('open');
+}
+
+// ── Save ──
+async function saveState() {
+  const data = {
+    members: state.members,
+    recipes: state.recipes,
+    calendar: state.calendar,
+    grocery: state.grocery,
+    dayNotes,
+    updatedAt: new Date().toISOString()
+  };
+
+  // Always save to localStorage as immediate fallback
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+
+  // Save to Firestore if authenticated
+  if (db && currentUser) {
+    try {
+      await db.collection('hearth').doc(firestoreDocId).set(data);
+    } catch(e) {
+      console.warn('Firestore save failed:', e.message);
+    }
   }
 }
 
@@ -6075,15 +6177,13 @@ async function deleteRecipe(id, e) {
   });
 }
 
-// ── API Key management ────────────────────────────────────
+// ── API Key management — Firestore only, never localStorage ──
 async function loadApiKey() {
-  // Try Firestore first
   if (db) {
     try {
       const doc = await db.collection('hearth_config').doc('settings').get();
       if (doc.exists && doc.data().anthropicKey) {
         window.ANTHROPIC_API_KEY = doc.data().anthropicKey;
-        localStorage.setItem('hearth_api_key', doc.data().anthropicKey);
         setApiStatusDot(true);
         return true;
       }
@@ -6091,15 +6191,10 @@ async function loadApiKey() {
       console.warn('Could not load API key from Firestore:', e.message);
     }
   }
-  // Fall back to localStorage cache
-  const cached = localStorage.getItem('hearth_api_key');
-  if (cached) {
-    window.ANTHROPIC_API_KEY = cached;
-    setApiStatusDot(true);
-    return true;
-  }
+  // No key found
+  window.ANTHROPIC_API_KEY = '';
   setApiStatusDot(false);
-  return false; // no key found — need setup
+  return false;
 }
 
 async function saveApiKey() {
@@ -6109,14 +6204,13 @@ async function saveApiKey() {
   errEl.style.display = 'none';
 
   if (!key.startsWith('sk-ant-')) {
-    errEl.textContent = 'That doesn\'t look like a valid Anthropic key. It should start with sk-ant-';
+    errEl.textContent = 'Invalid key — should start with sk-ant-';
     errEl.style.display = 'block';
     input.style.borderColor = 'rgba(226,75,74,0.5)';
     return;
   }
 
   window.ANTHROPIC_API_KEY = key;
-  localStorage.setItem('hearth_api_key', key);
   setApiStatusDot(true);
 
   if (db) {
@@ -6124,12 +6218,12 @@ async function saveApiKey() {
       await db.collection('hearth_config').doc('settings').set({ anthropicKey: key });
     } catch(e) {
       console.warn('Could not save API key to Firestore:', e.message);
-      // Key is still saved to localStorage so app will work
     }
   }
 
+  // Never write to localStorage — Firestore is the only source of truth
   document.getElementById('modal-apikey').classList.remove('open');
-  showToast('API key saved — AI features are ready');
+  showToast('API key saved to Firestore');
 }
 
 function setApiStatusDot(ok) {
@@ -6147,23 +6241,11 @@ function openApiKeyModal() {
 }
 
 // ── App init ──
-// Set current day to today on load
 currentDayIndex = new Date().getDay();
-
-// Re-render on orientation/resize change (week ↔ day view switch)
 window.addEventListener('resize', () => renderWeekGrid());
 
-(async () => {
-  initFirestore();
-  const hasKey = await loadApiKey();
-  await loadState();
-  renderFamilyChips();
-  renderWeekGrid();
-  // Show setup modal if no API key found
-  if (!hasKey) {
-    document.getElementById('modal-apikey').classList.add('open');
-  }
-})();
+initFirebase();
+startAuthListener();
 </script>
 <!-- API Key Setup Modal -->
 <div class="modal-overlay" id="modal-apikey" style="z-index:9999;background:rgba(0,0,0,0.85);">
