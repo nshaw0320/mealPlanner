@@ -4516,66 +4516,164 @@ function guessCategory(name) {
 }
 
 function buildGroceryFromWeek() {
-  // Collect all recipe IDs from current week calendar
   const recipeIds = [...new Set(Object.values(state.calendar).filter(Boolean))];
-  if (!recipeIds.length) {
-    showToast('No meals planned this week — add meals first');
-    return;
-  }
+  if (!recipeIds.length) { showToast('No meals planned this week — add meals first'); return; }
 
-  // Collect ingredients from recipes that have them
-  const newItems = [];
+  const rawItems = [];
   const missingRecipes = [];
   let nextId = Date.now();
 
   recipeIds.forEach(id => {
     const r = getRecipeById(id);
     if (!r) return;
-    if (r.ingredients && r.ingredients.length) {
+    if (r.ingredients?.length) {
       r.ingredients.forEach(ing => {
         if (!ing.name?.trim()) return;
-        newItems.push({
-          id: nextId++,
-          name: ing.name.trim(),
-          qty: ing.qty?.trim() || '',
-          category: guessCategory(ing.name),
-          source: r.name,
-          checked: false
-        });
+        rawItems.push({ name: ing.name.trim(), qty: ing.qty?.trim() || '', source: r.name });
       });
-    } else if (r.name && r.name !== 'Note' && !r.tags?.includes('note')) {
+    } else if (r.name && !r.tags?.includes('note')) {
       missingRecipes.push(r.name);
     }
   });
 
-  // Merge: keep existing checked items, replace unchecked
-  const checkedItems = state.grocery.filter(i => i.checked);
-  const manualItems = state.grocery.filter(i => i.manual && !i.checked);
+  // ── Smart quantity consolidation ──────────────────────────
+  // Unit normalisation map — aliases → canonical unit
+  const UNIT_ALIASES = {
+    'tsp': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
+    'tbsp': 'tbsp', 'tablespoon': 'tbsp', 'tablespoons': 'tbsp',
+    'cup': 'cup', 'cups': 'cup',
+    'oz': 'oz', 'ounce': 'oz', 'ounces': 'oz',
+    'lb': 'lb', 'lbs': 'lb', 'pound': 'lb', 'pounds': 'lb',
+    'g': 'g', 'gram': 'g', 'grams': 'g',
+    'kg': 'kg', 'kilogram': 'kg', 'kilograms': 'kg',
+    'ml': 'ml', 'milliliter': 'ml', 'milliliters': 'ml',
+    'l': 'l', 'liter': 'l', 'liters': 'l',
+    'fl oz': 'fl oz', 'fluid oz': 'fl oz', 'fluid ounce': 'fl oz',
+    'clove': 'clove', 'cloves': 'clove',
+    'slice': 'slice', 'slices': 'slice',
+    'can': 'can', 'cans': 'can',
+    'pkg': 'pkg', 'package': 'pkg', 'packages': 'pkg',
+    'bunch': 'bunch', 'bunches': 'bunch',
+    'sprig': 'sprig', 'sprigs': 'sprig',
+    'pinch': 'pinch', 'pinches': 'pinch',
+    'piece': 'piece', 'pieces': 'piece',
+  };
 
-  // Consolidate duplicates by name (case-insensitive)
-  const merged = {};
-  newItems.forEach(item => {
-    const key = item.name.toLowerCase();
-    if (merged[key]) {
-      if (item.qty) merged[key].qty = merged[key].qty ? merged[key].qty + ', ' + item.qty : item.qty;
-      merged[key].source += ', ' + item.source;
-    } else {
-      merged[key] = { ...item };
+  // Fraction → decimal
+  function parseFraction(s) {
+    s = s.trim();
+    const FRACS = { '¼':0.25,'½':0.5,'¾':0.75,'⅓':0.333,'⅔':0.667,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875 };
+    if (FRACS[s]) return FRACS[s];
+    if (s.includes('/')) {
+      const [n, d] = s.split('/').map(Number);
+      return d ? n / d : NaN;
     }
+    return parseFloat(s);
+  }
+
+  // Parse "2 cups", "1/2 tsp", "¾ lb", "3" → { amount, unit } or null
+  function parseQty(raw) {
+    if (!raw) return null;
+    raw = raw.trim().toLowerCase();
+    // Match: optional number/fraction, optional unit
+    const m = raw.match(/^([\d¼½¾⅓⅔⅛⅜⅝⅞\/\.\s]+?)\s*([a-z\s]+)?$/);
+    if (!m) return null;
+    const amtStr = m[1]?.trim();
+    const unitStr = m[2]?.trim() || '';
+    // Handle "1 1/2" style mixed numbers
+    const mixedMatch = amtStr?.match(/^(\d+)\s+([\d\/¼½¾⅓⅔⅛⅜⅝⅞]+)$/);
+    let amount;
+    if (mixedMatch) {
+      amount = parseFloat(mixedMatch[1]) + parseFraction(mixedMatch[2]);
+    } else {
+      amount = parseFraction(amtStr || '');
+    }
+    if (isNaN(amount)) return null;
+    const unit = UNIT_ALIASES[unitStr] || unitStr || '';
+    return { amount, unit };
+  }
+
+  // Format a number cleanly — no trailing zeros, nice fractions
+  function formatAmount(n) {
+    if (Math.abs(n - Math.round(n)) < 0.01) return String(Math.round(n));
+    const NICE = [[0.25,'¼'],[0.5,'½'],[0.75,'¾'],[0.33,'⅓'],[0.67,'⅔'],[0.125,'⅛'],[0.375,'⅜'],[0.625,'⅝'],[0.875,'⅞']];
+    const whole = Math.floor(n);
+    const frac = n - whole;
+    for (const [val, sym] of NICE) {
+      if (Math.abs(frac - val) < 0.04) return (whole ? whole + ' ' : '') + sym;
+    }
+    return n.toFixed(2).replace(/\.?0+$/, '');
+  }
+
+  // Group raw items by normalised ingredient name
+  const groups = {}; // key → { name, category, sources[], qtys[] }
+  rawItems.forEach(item => {
+    const key = item.name.toLowerCase().replace(/\s+/g, ' ');
+    if (!groups[key]) {
+      groups[key] = { name: item.name, category: guessCategory(item.name), sources: [], qtys: [] };
+    }
+    groups[key].sources.push(item.source);
+    if (item.qty) groups[key].qtys.push(item.qty);
   });
 
-  state.grocery = [
-    ...Object.values(merged),
-    ...manualItems,
-    ...checkedItems
-  ];
+  // For each group, combine quantities
+  const merged = {};
+  Object.entries(groups).forEach(([key, g]) => {
+    let combinedQty = '';
+    if (g.qtys.length) {
+      // Parse all quantities
+      const parsed = g.qtys.map(q => parseQty(q));
+      const allParsed = parsed.every(p => p !== null);
+      const sameUnit = allParsed && new Set(parsed.map(p => p.unit)).size === 1;
 
-  saveState().catch(e => console.warn("Save failed:", e.message));
+      if (allParsed && sameUnit) {
+        // All same unit — add them up
+        const total = parsed.reduce((s, p) => s + p.amount, 0);
+        const unit = parsed[0].unit;
+        combinedQty = formatAmount(total) + (unit ? ' ' + unit : '');
+      } else if (allParsed && !sameUnit) {
+        // Different units — group by unit and sum each, then join
+        const byUnit = {};
+        parsed.forEach(p => {
+          byUnit[p.unit] = (byUnit[p.unit] || 0) + p.amount;
+        });
+        combinedQty = Object.entries(byUnit)
+          .map(([u, a]) => formatAmount(a) + (u ? ' ' + u : ''))
+          .join(' + ');
+      } else {
+        // Can't parse numerically — deduplicate and join
+        const unique = [...new Set(g.qtys)];
+        combinedQty = unique.join(' + ');
+      }
+    }
+
+    // Deduplicate sources
+    const uniqueSources = [...new Set(g.sources)];
+
+    merged[key] = {
+      id: nextId++,
+      name: g.name,
+      qty: combinedQty,
+      category: g.category,
+      source: uniqueSources.join(', '),
+      checked: false
+    };
+  });
+
+  // Keep existing checked + manual unchecked items
+  const checkedItems = state.grocery.filter(i => i.checked);
+  const manualItems  = state.grocery.filter(i => i.manual && !i.checked);
+
+  state.grocery = [...Object.values(merged), ...manualItems, ...checkedItems];
+
+  saveState().catch(e => console.warn('Save failed:', e.message));
   renderGrocery();
 
   const count = Object.values(merged).length;
-  const missingNote = missingRecipes.length ? ` (${missingRecipes.length} recipe${missingRecipes.length>1?'s':''} missing full recipe — open them to load ingredients)` : '';
-  showToast(`${count} ingredient${count!==1?'s':''} added from ${recipeIds.length} meal${recipeIds.length!==1?'s':''}${missingNote}`);
+  const missingNote = missingRecipes.length
+    ? ` · ${missingRecipes.length} recipe${missingRecipes.length > 1 ? 's' : ''} missing ingredients`
+    : '';
+  showToast(`${count} ingredient${count !== 1 ? 's' : ''} from ${recipeIds.length} meal${recipeIds.length !== 1 ? 's' : ''}${missingNote}`);
 }
 
 function addGroceryItem() {
