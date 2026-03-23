@@ -3368,7 +3368,11 @@ function getWeekLabel() {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-function getRecipeById(id) { return state.recipes.find(r => r.id === id); }
+function getRecipeById(id) {
+  if (id === undefined || id === null) return undefined;
+  // Use == (loose) so numeric ID 1234 matches string "1234" after Firestore round-trip
+  return state.recipes.find(r => r.id == id);
+}
 
 function anyMemberConflict(recipe) {
   return state.members.some(m => recipe.allergens.some(a => m.allergens.includes(a)));
@@ -6221,10 +6225,17 @@ async function loadState() {
   if (!saved) return;
 
   // Apply saved data — use Array.isArray checks so empty arrays are respected
-  // This prevents defaulting back to hardcoded data when user has deleted everything
   if (Array.isArray(saved.members)) state.members = saved.members;
-  if (Array.isArray(saved.recipes)) state.recipes = saved.recipes;
-  if (saved.calendar && typeof saved.calendar === 'object') state.calendar = saved.calendar;
+  if (Array.isArray(saved.recipes)) {
+    // Normalize recipe IDs to numbers
+    state.recipes = saved.recipes.map(r => ({ ...r, id: Number(r.id) }));
+  }
+  if (saved.calendar && typeof saved.calendar === 'object') {
+    // Normalize calendar recipe ID values to numbers
+    state.calendar = Object.fromEntries(
+      Object.entries(saved.calendar).map(([k, v]) => [k, v !== null && v !== undefined ? Number(v) : v])
+    );
+  }
   if (Array.isArray(saved.grocery)) state.grocery = saved.grocery;
   if (saved.dayNotes && typeof saved.dayNotes === 'object') Object.assign(dayNotes, saved.dayNotes);
 
