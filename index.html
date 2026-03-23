@@ -620,6 +620,55 @@
   .arm-upload-preview-info { flex: 1; min-width: 0; }
   .arm-upload-preview-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .arm-upload-preview-size { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Pantry page ── */
+  .pantry-dark {
+    background: var(--surface); border-radius: 18px;
+    padding: 1.75rem 2rem 2rem; min-height: 500px;
+  }
+  .pantry-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; gap: 12px; flex-wrap: wrap; }
+  .pantry-title { font-family: 'Lora', serif; font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -0.3px; }
+  .pantry-actions { display: flex; gap: 8px; }
+  .pantry-summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .pantry-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 12px; color: var(--muted); }
+  .pantry-stat strong { color: var(--text); font-size: 16px; display: block; margin-bottom: 1px; }
+  .pantry-search-wrap { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+  .pantry-search-input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; }
+  .pantry-search-input::placeholder { color: var(--muted2); }
+  .pantry-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .pantry-filter-pill { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; cursor: pointer; border: 1px solid var(--border2); background: var(--surface2); color: var(--muted); transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .pantry-filter-pill.active { background: var(--accent-bg); border-color: var(--accent-text); color: var(--accent-text); }
+  .pantry-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted2); margin: 14px 0 6px; }
+  .pantry-item { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
+  .pantry-item:last-child { border-bottom: none; }
+  .pantry-item-name { flex: 1; font-size: 14px; color: var(--text); font-weight: 500; }
+  .pantry-item-qty {
+    font-size: 12px; color: var(--accent-text); background: var(--accent-bg);
+    border-radius: 6px; padding: 3px 10px; cursor: pointer;
+    border: 1px solid transparent; transition: all 0.15s; white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+  }
+  .pantry-item-qty:hover { border-color: var(--accent-text); }
+  .pantry-item-qty-input {
+    background: var(--surface3); color: var(--text); border: 1px solid var(--accent-text);
+    border-radius: 6px; padding: 3px 8px; width: 80px; font-size: 12px;
+    font-family: 'Inter', sans-serif; outline: none;
+  }
+  .pantry-item-remove { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 17px; padding: 0 2px; transition: color 0.15s; flex-shrink: 0; }
+  .pantry-item-remove:hover { color: var(--danger); }
+  .pantry-empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .pantry-empty-icon { font-size: 42px; margin-bottom: 10px; }
+  .pantry-empty-title { font-size: 15px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  .grocery-item.in-pantry .grocery-name { color: var(--muted); text-decoration: line-through; }
+  .pantry-badge { font-size: 10px; font-weight: 600; background: var(--accent-bg); color: var(--accent-text); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+  @media (max-width: 768px) { .pantry-dark { border-radius: 14px; padding: 1rem 0.875rem 1.25rem; } }
+  @media (max-width: 480px) { .pantry-dark { padding: 0.875rem 0.625rem 1rem; border-radius: 12px; } }
+  :root.light .pantry-dark { background: #FFFFFF; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  :root.light .pantry-item-name { color: #1A1A1F; }
+  :root.light .pantry-search-wrap { background: #F5F4F0; border-color: rgba(0,0,0,0.1); }
+  :root.light .pantry-search-input { color: #1A1A1F; }
+  :root.light .pantry-stat { background: #F5F4F0; border-color: rgba(0,0,0,0.08); }
+
   .arm-mode-toggle {
     display: flex;
     gap: 4px;
@@ -2520,6 +2569,7 @@
       <div class="nav-item active" onclick="showPage('calendar')"><span class="nav-icon">📅</span> Week Planner</div>
       <div class="nav-item" onclick="showPage('recipes')"><span class="nav-icon">📖</span> Recipe Library</div>
       <div class="nav-item" onclick="showPage('grocery')"><span class="nav-icon">🛒</span> Grocery List</div>
+      <div class="nav-item" onclick="showPage('pantry')"><span class="nav-icon">🫙</span> Pantry</div>
       <div class="nav-item" onclick="showPage('ai')"><span class="nav-icon">✦</span> AI Suggestions</div>
       <div class="nav-item" onclick="showPage('members')"><span class="nav-icon">👪</span> Family Members</div>
     </div>
@@ -2777,6 +2827,54 @@
       </div>
     </div>
 
+    <!-- PANTRY -->
+    <div class="page" id="page-pantry">
+      <div class="pantry-dark">
+
+        <div class="pantry-topbar">
+          <div class="pantry-title">Pantry</div>
+          <div class="pantry-actions">
+            <button class="grocery-action-btn" onclick="clearPantry()">Clear all</button>
+          </div>
+        </div>
+
+        <div class="pantry-summary" id="pantry-summary"></div>
+
+        <!-- Search -->
+        <div class="pantry-search-wrap">
+          <span style="color:var(--muted);font-size:14px;">🔍</span>
+          <input class="pantry-search-input" id="pantry-search"
+            placeholder="Search pantry…"
+            oninput="renderPantry()"
+            autocomplete="off">
+        </div>
+
+        <!-- Category filter pills -->
+        <div class="pantry-filter-row" id="pantry-filter-row"></div>
+
+        <!-- Pantry item list -->
+        <div id="pantry-list"></div>
+
+        <!-- Add item row -->
+        <div class="grocery-add-row" style="margin-top:1.25rem;">
+          <input class="grocery-add-input" id="pantry-add-input"
+            placeholder="Item… e.g. olive oil"
+            list="pantry-add-suggestions"
+            autocomplete="off"
+            oninput="filterGrocerySuggestions(this.value,'pantry-add-suggestions')"
+            onkeydown="if(event.key==='Enter')document.getElementById('pantry-add-qty').focus()">
+          <datalist id="pantry-add-suggestions"></datalist>
+          <input class="grocery-add-qty" id="pantry-add-qty"
+            placeholder="Qty"
+            list="grocery-qty-suggestions"
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter')addPantryItem()">
+          <button class="grocery-add-submit" onclick="addPantryItem()">+ Add</button>
+        </div>
+
+      </div>
+    </div>
+
     <!-- AI -->
     <div class="page" id="page-ai">
       <div class="page-title">AI Meal Suggestions</div>
@@ -2837,6 +2935,9 @@
   </button>
   <button class="mobile-nav-item" data-page="grocery" onclick="showPage('grocery')">
     <span class="mobile-nav-icon">🛒</span><span>Grocery</span>
+  </button>
+  <button class="mobile-nav-item" data-page="pantry" onclick="showPage('pantry')">
+    <span class="mobile-nav-icon">🫙</span><span>Pantry</span>
   </button>
   <button class="mobile-nav-item" data-page="ai" onclick="showPage('ai')">
     <span class="mobile-nav-icon">✦</span><span>AI</span>
@@ -3353,7 +3454,8 @@ let state = {
   members: [],
   recipes: [],
   calendar: {},
-  grocery: []
+  grocery: [],
+  pantry: []   // { id, name, qty, category }
 };
 
 function getWeekLabel() {
@@ -4375,18 +4477,6 @@ const CUISINE_ACCENTS = {
   'default': 'var(--muted)'
 };
 
-function setCuisineFilter(btn) {
-  recipeCuisineFilter = btn.dataset.cuisine;
-  document.querySelectorAll('#recipe-filter-row .r-filter-pill[data-cuisine]').forEach(b => b.classList.toggle('active', b === btn));
-  renderRecipes();
-}
-
-function toggleSafeFilter(btn) {
-  recipeSafeFilter = !recipeSafeFilter;
-  btn.classList.toggle('active', recipeSafeFilter);
-  renderRecipes();
-}
-
 function renderRecipes() {
   const q = (document.getElementById('recipe-search')?.value || '').toLowerCase();
   const grid = document.getElementById('recipe-grid');
@@ -4605,15 +4695,68 @@ function buildGroceryFromWeek() {
     return n.toFixed(2).replace(/\.?0+$/, '');
   }
 
-  // Group raw items by normalised ingredient name
-  const groups = {}; // key → { name, category, sources[], qtys[] }
+  // ── Ingredient normalisation — strip prep words before grouping ──
+  // e.g. "freshly minced garlic" → "garlic"
+  //      "red onion, diced"      → "red onion"
+  //      "chicken breast, boneless skinless" → "chicken breast"
+
+  const PREP_WORDS = new Set([
+    // Cuts / knife prep
+    'minced','mince','diced','dice','chopped','chop','sliced','slice','slices',
+    'julienned','julienne','shredded','shred','grated','grate','crushed','crush',
+    'halved','halved','quartered','trimmed','peeled','deveined','pitted',
+    'torn','crumbled','crumble','cubed','cube','roughly','finely','thinly',
+    'coarsely','crosswise','lengthwise','diagonal','diagonally',
+    // Cooking state
+    'cooked','uncooked','raw','boiled','steamed','roasted','toasted','grilled',
+    'fried','sautéed','sauteed','caramelised','caramelized','blanched','frozen',
+    'thawed','softened','melted','room temperature','warm','cold','chilled',
+    'dried','sun-dried','smoked','canned','drained','rinsed',
+    // Freshness / quality descriptors
+    'fresh','freshly','dried','ground','whole','large','medium','small',
+    'extra','extra-large','jumbo','baby','organic','ripe','overripe',
+    'boneless','skinless','bone-in','skin-on','lean','fat-free','low-fat',
+    'unsalted','salted','sweetened','unsweetened','plain','flavored',
+    'packed','loosely','heaped','heaping','level',
+    // Units that sometimes sneak into names
+    'about','approximately','plus','more','optional','to taste',
+  ]);
+
+  function normaliseIngredient(name) {
+    let s = name.toLowerCase().trim();
+    // Remove anything after a comma (e.g. "onion, diced")
+    s = s.split(',')[0].trim();
+    // Remove anything in parens (e.g. "garlic (crushed)")
+    s = s.replace(/\(.*?\)/g, '').trim();
+    // Split into words and remove prep words from either end
+    let words = s.split(/\s+/);
+    // Strip from front
+    while (words.length > 1 && PREP_WORDS.has(words[0])) words.shift();
+    // Strip from back
+    while (words.length > 1 && PREP_WORDS.has(words[words.length - 1])) words.pop();
+    return words.join(' ').trim();
+  }
+
+  // Group raw items by normalised name
+  const groups = {}; // normKey → { displayName, category, sources[], qtys[] }
   rawItems.forEach(item => {
-    const key = item.name.toLowerCase().replace(/\s+/g, ' ');
-    if (!groups[key]) {
-      groups[key] = { name: item.name, category: guessCategory(item.name), sources: [], qtys: [] };
+    const normKey = normaliseIngredient(item.name);
+    if (!groups[normKey]) {
+      groups[normKey] = {
+        // Keep the shortest/cleanest name as display name
+        name: item.name.split(',')[0].trim(),
+        category: guessCategory(normKey),
+        sources: [],
+        qtys: []
+      };
+    } else {
+      // Prefer the shorter display name (less prep clutter)
+      const existing = groups[normKey].name;
+      const candidate = item.name.split(',')[0].trim();
+      if (candidate.length < existing.length) groups[normKey].name = candidate;
     }
-    groups[key].sources.push(item.source);
-    if (item.qty) groups[key].qtys.push(item.qty);
+    groups[normKey].sources.push(item.source);
+    if (item.qty) groups[normKey].qtys.push(item.qty);
   });
 
   // For each group, combine quantities
@@ -4665,6 +4808,14 @@ function buildGroceryFromWeek() {
   const manualItems  = state.grocery.filter(i => i.manual && !i.checked);
 
   state.grocery = [...Object.values(merged), ...manualItems, ...checkedItems];
+
+  // Mark items already in pantry
+  state.grocery.forEach(item => {
+    if (!item.manual && !item.checked && isInPantry(item.name)) {
+      item.inPantry = true;
+      item.checked = true; // auto-check them
+    }
+  });
 
   saveState().catch(e => console.warn('Save failed:', e.message));
   renderGrocery();
@@ -4758,10 +4909,11 @@ function renderGrocery() {
     sec.innerHTML = `<div class="grocery-section-title">${cat}</div>`;
     items.forEach(item => {
       const row = document.createElement('div');
-      row.className = 'grocery-item' + (item.checked ? ' checked-item' : '');
+      row.className = 'grocery-item' + (item.checked ? ' checked-item' : '') + (item.inPantry ? ' in-pantry' : '');
       row.innerHTML = `
         <div class="grocery-check${item.checked?' checked':''}" onclick="toggleGrocery(${item.id})">${item.checked?'✓':''}</div>
         <span class="grocery-name">${item.name}</span>
+        ${item.inPantry ? '<span class="pantry-badge">🫙 in pantry</span>' : ''}
         ${item.source && item.source !== 'Manual' ? `<span class="grocery-source">${item.source.length > 25 ? item.source.slice(0,25)+'…' : item.source}</span>` : ''}
         <span class="grocery-qty">${item.qty||''}</span>
         <button onclick="removeGroceryItem(${item.id})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:15px;padding:0 2px;transition:color 0.15s;flex-shrink:0;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted2)'">×</button>
@@ -4822,29 +4974,189 @@ const GROCERY_SUGGESTIONS = [
   'Crackers','Hummus','Pita chips','Rice cakes','Trail mix',
 ];
 
-function filterGrocerySuggestions(val) {
-  const dl = document.getElementById('grocery-suggestions');
+function filterGrocerySuggestions(val, targetId = 'grocery-suggestions') {
+  const dl = document.getElementById(targetId);
   if (!dl) return;
   dl.innerHTML = '';
   if (!val || val.length < 1) return;
 
   const lower = val.toLowerCase();
-
-  // Also include ingredients from current recipes in library
   const recipeIngredients = [...new Set(
     state.recipes.flatMap(r => (r.ingredients || []).map(i => i.name).filter(Boolean))
   )];
   const allSuggestions = [...new Set([...GROCERY_SUGGESTIONS, ...recipeIngredients])];
 
-  // Filter: starts-with first, then contains
   const startsWith = allSuggestions.filter(s => s.toLowerCase().startsWith(lower));
-  const contains = allSuggestions.filter(s => !s.toLowerCase().startsWith(lower) && s.toLowerCase().includes(lower));
-  const filtered = [...startsWith, ...contains].slice(0, 10);
-
-  filtered.forEach(item => {
+  const contains   = allSuggestions.filter(s => !s.toLowerCase().startsWith(lower) && s.toLowerCase().includes(lower));
+  [...startsWith, ...contains].slice(0, 10).forEach(item => {
     const opt = document.createElement('option');
     opt.value = item;
     dl.appendChild(opt);
+  });
+}
+
+// ── Pantry ──────────────────────────────────────────────────
+let pantryFilter = 'All';
+
+function addPantryItem() {
+  const nameInput = document.getElementById('pantry-add-input');
+  const qtyInput  = document.getElementById('pantry-add-qty');
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  const qty = qtyInput?.value.trim() || '';
+
+  // Check for duplicate (case-insensitive)
+  const exists = state.pantry.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (exists) {
+    // Update qty instead of adding duplicate
+    exists.qty = qty || exists.qty;
+    nameInput.value = ''; if (qtyInput) qtyInput.value = '';
+    nameInput.focus();
+    saveState().catch(e => console.warn('Save failed:', e));
+    renderPantry();
+    showToast(`"${name}" already in pantry — quantity updated`);
+    return;
+  }
+
+  state.pantry.push({ id: Date.now(), name, qty, category: guessCategory(name) });
+  nameInput.value = ''; if (qtyInput) qtyInput.value = '';
+  nameInput.focus();
+  saveState().catch(e => console.warn('Save failed:', e));
+  renderPantry();
+}
+
+function removePantryItem(id) {
+  const item = state.pantry.find(i => i.id === id);
+  state.pantry = state.pantry.filter(i => i.id !== id);
+  saveState().catch(e => console.warn('Save failed:', e));
+  renderPantry();
+  if (item) showToast(`"${item.name}" removed from pantry`, () => {
+    state.pantry.push(item);
+    saveState().catch(e => console.warn('Save failed:', e));
+    renderPantry();
+  });
+}
+
+function editPantryQty(id) {
+  const item = state.pantry.find(i => i.id === id);
+  if (!item) return;
+  const qtyEl = document.getElementById(`pantry-qty-${id}`);
+  if (!qtyEl) return;
+  const input = document.createElement('input');
+  input.className = 'pantry-item-qty-input';
+  input.value = item.qty || '';
+  input.placeholder = 'e.g. 1 cup';
+  qtyEl.replaceWith(input);
+  input.focus(); input.select();
+  const save = () => {
+    item.qty = input.value.trim();
+    saveState().catch(e => console.warn('Save failed:', e));
+    renderPantry();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { save(); } if (e.key === 'Escape') renderPantry(); });
+}
+
+function clearPantry() {
+  if (!state.pantry.length) return;
+  if (!confirm(`Remove all ${state.pantry.length} pantry items?`)) return;
+  state.pantry = [];
+  saveState().catch(e => console.warn('Save failed:', e));
+  renderPantry();
+}
+
+function renderPantry() {
+  const search = (document.getElementById('pantry-search')?.value || '').toLowerCase().trim();
+
+  // Summary stats
+  const summaryEl = document.getElementById('pantry-summary');
+  if (summaryEl) {
+    const cats = [...new Set(state.pantry.map(p => p.category))].length;
+    summaryEl.innerHTML = `
+      <div class="pantry-stat"><strong>${state.pantry.length}</strong>items</div>
+      <div class="pantry-stat"><strong>${cats}</strong>categories</div>`;
+  }
+
+  // Category filter pills
+  const filterRow = document.getElementById('pantry-filter-row');
+  if (filterRow) {
+    const cats = ['All', ...new Set(
+      ['Produce','Meat & Seafood','Dairy','Pantry','Bakery','Frozen','Beverages','Other']
+        .filter(c => state.pantry.some(p => p.category === c))
+    )];
+    filterRow.innerHTML = cats.map(c => `
+      <button class="pantry-filter-pill${pantryFilter === c ? ' active' : ''}"
+        onclick="pantryFilter='${c}';renderPantry()">${c}</button>`).join('');
+  }
+
+  // Filter items
+  let items = state.pantry;
+  if (pantryFilter !== 'All') items = items.filter(p => p.category === pantryFilter);
+  if (search) items = items.filter(p => p.name.toLowerCase().includes(search));
+
+  const listEl = document.getElementById('pantry-list');
+  if (!listEl) return;
+
+  if (!state.pantry.length) {
+    listEl.innerHTML = `
+      <div class="pantry-empty">
+        <div class="pantry-empty-icon">🫙</div>
+        <div class="pantry-empty-title">Your pantry is empty</div>
+        <div style="font-size:13px;">Add items you already have so they get marked off your grocery list automatically.</div>
+      </div>`;
+    return;
+  }
+
+  if (!items.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">No items match "${search}"</div>`;
+    return;
+  }
+
+  // Group by category
+  const catOrder = ['Produce','Meat & Seafood','Dairy','Pantry','Bakery','Frozen','Beverages','Other'];
+  const grouped = {};
+  items.forEach(p => { if (!grouped[p.category]) grouped[p.category] = []; grouped[p.category].push(p); });
+  const orderedCats = [...catOrder.filter(c => grouped[c]), ...Object.keys(grouped).filter(c => !catOrder.includes(c))];
+
+  const CATEGORY_ICONS = {
+    'Produce':'🥦','Meat & Seafood':'🥩','Dairy':'🧀','Pantry':'🧂',
+    'Bakery':'🍞','Frozen':'🧊','Beverages':'🧃','Other':'📦'
+  };
+
+  listEl.innerHTML = '';
+  orderedCats.forEach(cat => {
+    const sec = document.createElement('div');
+    sec.innerHTML = `<div class="pantry-section-title">${CATEGORY_ICONS[cat]||'📦'} ${cat}</div>`;
+    grouped[cat].sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'pantry-item';
+      row.innerHTML = `
+        <span class="pantry-item-name">${item.name}</span>
+        <span class="pantry-item-qty" id="pantry-qty-${item.id}"
+          onclick="editPantryQty(${item.id})"
+          title="Tap to edit quantity">${item.qty || '+ qty'}</span>
+        <button class="pantry-item-remove" onclick="removePantryItem(${item.id})">×</button>`;
+      sec.appendChild(row);
+    });
+    listEl.appendChild(sec);
+  });
+}
+
+// Check if an ingredient name is in the pantry (fuzzy match)
+function isInPantry(ingredientName) {
+  if (!state.pantry.length) return false;
+  const lower = ingredientName.toLowerCase().trim();
+  return state.pantry.some(p => {
+    const pl = p.name.toLowerCase().trim();
+    return pl === lower || lower.includes(pl) || pl.includes(lower);
+  });
+}
+
+function getPantryItem(ingredientName) {
+  const lower = ingredientName.toLowerCase().trim();
+  return state.pantry.find(p => {
+    const pl = p.name.toLowerCase().trim();
+    return pl === lower || lower.includes(pl) || pl.includes(lower);
   });
 }
 
@@ -6027,13 +6339,14 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
   document.getElementById('page-' + name).classList.add('active');
-  const pages = ['calendar','recipes','grocery','ai','members'];
+  const pages = ['calendar','recipes','grocery','pantry','ai','members'];
   document.querySelectorAll('.nav-item')[pages.indexOf(name)]?.classList.add('active');
   if (name === 'recipes') renderRecipes();
   if (name === 'grocery') {
     if (!state.grocery.length) buildGroceryFromWeek();
     else renderGrocery();
   }
+  if (name === 'pantry') renderPantry();
   if (name === 'members') renderMembers();
 }
 
@@ -6240,6 +6553,7 @@ async function saveState() {
     recipes: state.recipes,
     calendar: state.calendar,
     grocery: state.grocery,
+    pantry: state.pantry || [],
     dayNotes,
     updatedAt: new Date().toISOString()
   };
@@ -6257,38 +6571,11 @@ async function saveState() {
   }
 }
 
-// ── Save ──
-async function saveState() {
-  const data = {
-    members: state.members,
-    recipes: state.recipes,
-    calendar: state.calendar,
-    grocery: state.grocery,
-    dayNotes,
-    updatedAt: new Date().toISOString()
-  };
-
-  // Always save to localStorage as immediate fallback
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch(e) { console.warn('localStorage save failed', e); }
-
-  // Save to Firestore if available
-  if (db) {
-    try {
-      await db.collection('hearth').doc(firestoreDocId).set(data);
-    } catch(e) {
-      console.warn('Firestore save failed (using localStorage):', e.message);
-    }
-  }
-}
-
 // ── Load ──
 async function loadState() {
   let saved = null;
   let source = null;
 
-  // Try Firestore first
   if (db) {
     try {
       const doc = await db.collection('hearth').doc(firestoreDocId).get();
@@ -6296,10 +6583,8 @@ async function loadState() {
         saved = doc.data();
         source = 'firestore';
         console.log('✓ Loaded from Firestore');
-        // Keep localStorage in sync with latest Firestore data
         localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
       } else {
-        // Document doesn't exist yet — clear any stale localStorage so we start fresh
         localStorage.removeItem(STORAGE_KEY);
       }
     } catch(e) {
@@ -6307,7 +6592,6 @@ async function loadState() {
     }
   }
 
-  // Fall back to localStorage
   if (!saved) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -6319,25 +6603,21 @@ async function loadState() {
     } catch(e) { console.warn('localStorage load failed', e); }
   }
 
-  // Nothing saved yet — first launch, stay empty
   if (!saved) return;
 
-  // Apply saved data — use Array.isArray checks so empty arrays are respected
   if (Array.isArray(saved.members)) state.members = saved.members;
   if (Array.isArray(saved.recipes)) {
-    // Normalize recipe IDs to numbers
     state.recipes = saved.recipes.map(r => ({ ...r, id: Number(r.id) }));
   }
   if (saved.calendar && typeof saved.calendar === 'object') {
-    // Normalize calendar recipe ID values to numbers
     state.calendar = Object.fromEntries(
       Object.entries(saved.calendar).map(([k, v]) => [k, v !== null && v !== undefined ? Number(v) : v])
     );
   }
   if (Array.isArray(saved.grocery)) state.grocery = saved.grocery;
+  if (Array.isArray(saved.pantry))  state.pantry  = saved.pantry;
   if (saved.dayNotes && typeof saved.dayNotes === 'object') Object.assign(dayNotes, saved.dayNotes);
 
-  // If we loaded from localStorage, push to Firestore to keep in sync
   if (source === 'localStorage' && db) {
     saveState().catch(e => console.warn('Sync to Firestore failed:', e.message));
   }
